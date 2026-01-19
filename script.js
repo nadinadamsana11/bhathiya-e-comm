@@ -3,15 +3,15 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebas
 import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 
 // --- CONFIGURATION START ---
-  const firebaseConfig = {
-    apiKey: "AIzaSyAZdxVqfbBUzPX1GAUFaCxD-Apkjr3nRPo",
-    authDomain: "bhathiya-e-comm-site.firebaseapp.com",
-    projectId: "bhathiya-e-comm-site",
-    storageBucket: "bhathiya-e-comm-site.firebasestorage.app",
-    messagingSenderId: "908525960551",
-    appId: "1:908525960551:web:b1c7716fe172426ddf43c2",
-    measurementId: "G-7XBCYHGQK6"
-  };
+const firebaseConfig = {
+  apiKey: "AIzaSyDbiBOY0Zn2DiERJEG1Ri2DgTVll64xphA",
+  authDomain: "bhathiya-e-comm-site-f2c07.firebaseapp.com",
+  projectId: "bhathiya-e-comm-site-f2c07",
+  storageBucket: "bhathiya-e-comm-site-f2c07.firebasestorage.app",
+  messagingSenderId: "210770351495",
+  appId: "1:210770351495:web:7c66576e2f689850876f22",
+  measurementId: "G-4423Z2CVTJ"
+};
 
 // Replace with the shop owner's phone number (International format without +)
 // Example: 94771234567

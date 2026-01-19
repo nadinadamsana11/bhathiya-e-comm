@@ -3,18 +3,18 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebas
 import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 
 // --- CONFIGURATION START ---
-  const firebaseConfig = {
-    apiKey: "AIzaSyAZdxVqfbBUzPX1GAUFaCxD-Apkjr3nRPo",
-    authDomain: "bhathiya-e-comm-site.firebaseapp.com",
-    projectId: "bhathiya-e-comm-site",
-    storageBucket: "bhathiya-e-comm-site.firebasestorage.app",
-    messagingSenderId: "908525960551",
-    appId: "1:908525960551:web:b1c7716fe172426ddf43c2",
-    measurementId: "G-7XBCYHGQK6"
-  };
+const firebaseConfig = {
+  apiKey: "AIzaSyDbiBOY0Zn2DiERJEG1Ri2DgTVll64xphA",
+  authDomain: "bhathiya-e-comm-site-f2c07.firebaseapp.com",
+  projectId: "bhathiya-e-comm-site-f2c07",
+  storageBucket: "bhathiya-e-comm-site-f2c07.firebasestorage.app",
+  messagingSenderId: "210770351495",
+  appId: "1:210770351495:web:7c66576e2f689850876f22",
+  measurementId: "G-4423Z2CVTJ"
+};
 
-const CLOUDINARY_URL = "https://api.cloudinary.com/v1_1/bhathiya-e-comm-site/image/upload";
-const CLOUDINARY_UPLOAD_PRESET = "bhathiya-e-comm-site";
+const CLOUDINARY_URL = "https://api.cloudinary.com/v1_1/dsmmtfcjd/image/upload";
+const CLOUDINARY_UPLOAD_PRESET = "bhathiya_preset";
 // --- CONFIGURATION END ---
 
 // Initialize Firebase
@@ -51,7 +51,10 @@ productForm.addEventListener('submit', async (e) => {
         });
         const data = await res.json();
         
-        if (!data.secure_url) throw new Error("Image upload failed");
+        if (!data.secure_url) {
+            console.error("Cloudinary Error:", data);
+            throw new Error(data.error?.message || "Image upload failed");
+        }
 
         submitBtn.innerText = "Saving to Database...";
 
