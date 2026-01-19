@@ -19,6 +19,7 @@ const CLOUDINARY_UPLOAD_PRESET = "bhathiya_preset";
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
+// NOTE: Ensure you have created the 'Firestore Database' in Firebase Console (Build > Firestore Database > Create)
 const db = getFirestore(app);
 const productsCol = collection(db, "products");
 
@@ -49,11 +50,17 @@ productForm.addEventListener('submit', async (e) => {
             method: 'POST',
             body: formData
         });
-        const data = await res.json();
         
+        // Check for HTTP errors (e.g., 400 Bad Request if preset is wrong)
+        if (!res.ok) {
+            const errorData = await res.json().catch(() => ({}));
+            throw new Error(errorData.error?.message || `Cloudinary Upload Failed: ${res.status} ${res.statusText}`);
+        }
+
+        const data = await res.json();
+
         if (!data.secure_url) {
-            console.error("Cloudinary Error:", data);
-            throw new Error(data.error?.message || "Image upload failed");
+            throw new Error("Upload successful but no Secure URL returned.");
         }
 
         submitBtn.innerText = "Saving to Database...";
