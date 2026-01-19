@@ -22,7 +22,7 @@ const CLOUDINARY_UPLOAD_PRESET = "bhathiya_preset";
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
-const productsCol = collection(db, "products");
+const productsCol = collection(db, "perfumes");
 
 // DOM Elements
 const productForm = document.getElementById('productForm');
@@ -144,32 +144,51 @@ productForm.addEventListener('submit', async (e) => {
 // 2. Load Products for Table
 async function loadProducts() {
     tableBody.innerHTML = '<tr><td colspan="4" class="p-4 text-center">Loading...</td></tr>';
-    const snapshot = await getDocs(productsCol);
-    tableBody.innerHTML = '';
+    try {
+        const snapshot = await getDocs(productsCol);
+        tableBody.innerHTML = '';
 
-    snapshot.forEach(docSnap => {
-        const product = docSnap.data();
-        const row = `
-            <tr class="hover:bg-gray-700">
-                <td class="px-4 py-3">
-                    <img src="${product.imageUrl}" class="w-12 h-12 object-cover rounded border border-gray-600">
-                </td>
-                <td class="px-4 py-3 font-medium text-white">${product.name}</td>
-                <td class="px-4 py-3 text-gold">${product.price}</td>
-                <td class="px-4 py-3">
-                    <button onclick="deleteProduct('${docSnap.id}')" class="text-red-400 hover:text-red-200 text-sm underline">Delete</button>
-                </td>
-            </tr>
-        `;
-        tableBody.innerHTML += row;
-    });
+        if (snapshot.empty) {
+            tableBody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-gray-500">No perfumes found.</td></tr>';
+            return;
+        }
+
+        snapshot.forEach(docSnap => {
+            const product = docSnap.data();
+            const row = `
+                <tr class="hover:bg-gray-700">
+                    <td class="px-4 py-3">
+                        <img src="${product.imageUrl}" class="w-12 h-12 object-cover rounded border border-gray-600">
+                    </td>
+                    <td class="px-4 py-3 font-medium text-white">${product.name}</td>
+                    <td class="px-4 py-3 text-gold">${product.price}</td>
+                    <td class="px-4 py-3">
+                        <button onclick="deleteProduct('${docSnap.id}')" class="text-red-400 hover:text-red-200 text-sm underline">Delete</button>
+                    </td>
+                </tr>
+            `;
+            tableBody.innerHTML += row;
+        });
+    } catch (error) {
+        console.error("Error loading products:", error);
+        if (error.code === 'permission-denied') {
+            tableBody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-red-500">Permission Denied: You must be logged in.</td></tr>';
+        } else {
+            tableBody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-red-500">Error: ${error.message}</td></tr>`;
+        }
+    }
 }
 
 // 3. Delete Product
 window.deleteProduct = async (id) => {
     if(confirm("Are you sure you want to delete this product?")) {
-        await deleteDoc(doc(db, "products", id));
-        loadProducts();
+        try {
+            await deleteDoc(doc(db, "perfumes", id));
+            loadProducts();
+        } catch (error) {
+            console.error("Error deleting product:", error);
+            alert("Failed to delete: " + error.message);
+        }
     }
 };
 
