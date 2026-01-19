@@ -58,20 +58,22 @@ function renderProducts(products) {
 
     products.forEach(product => {
         const card = document.createElement('div');
-        card.className = "bg-white rounded-lg shadow-sm hover:shadow-xl transition duration-300 border border-gray-100 overflow-hidden group";
+        card.className = "group bg-white border border-gray-100 hover:shadow-xl transition-all duration-300";
         
         card.innerHTML = `
-            <div class="h-64 overflow-hidden relative">
-                <img src="${product.imageUrl}" alt="${product.name}" class="w-full h-full object-cover transform group-hover:scale-105 transition duration-500">
-                <div class="absolute top-2 right-2 bg-white px-2 py-1 text-xs font-bold uppercase tracking-wide">${product.category}</div>
-            </div>
-            <div class="p-6">
-                <h3 class="text-lg font-bold mb-1">${product.name}</h3>
-                <p class="text-gold font-bold mb-4">LKR ${product.price}</p>
-                <div class="flex gap-2">
-                    <button onclick="openModal('${product.id}')" class="flex-1 border border-gray-300 py-2 rounded text-sm hover:bg-gray-50 transition">View Details</button>
-                    <a href="${generateWhatsappLink(product)}" target="_blank" class="flex-1 bg-gray-900 text-white py-2 rounded text-center text-sm hover:bg-gray-800 transition">Buy</a>
+            <div class="h-80 overflow-hidden relative bg-gray-50">
+                <img src="${product.imageUrl}" alt="${product.name}" class="w-full h-full object-cover transform group-hover:scale-110 transition duration-700">
+                <div class="absolute top-4 right-4 bg-white/90 backdrop-blur-sm px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-charcoal">${product.category}</div>
+                
+                <!-- Hover Overlay -->
+                <div class="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                    <button onclick="openModal('${product.id}')" class="bg-white text-charcoal px-6 py-3 text-xs uppercase tracking-widest hover:bg-charcoal hover:text-white transition transform translate-y-4 group-hover:translate-y-0 duration-300">Quick View</button>
                 </div>
+            </div>
+            <div class="p-6 text-center">
+                <h3 class="font-serif text-xl text-charcoal mb-2">${product.name}</h3>
+                <p class="font-serif text-gold font-bold text-lg mb-4">LKR ${product.price}</p>
+                <a href="${generateWhatsappLink(product)}" target="_blank" class="inline-block w-full border border-charcoal text-charcoal py-3 text-xs uppercase tracking-widest hover:bg-charcoal hover:text-white transition duration-300">Buy on WhatsApp</a>
             </div>
         `;
         grid.appendChild(card);
@@ -128,3 +130,15 @@ modal.addEventListener('click', (e) => {
 
 // Initial Load
 fetchProducts();
+
+// Navbar Scroll Effect
+const navbar = document.getElementById('navbar');
+window.addEventListener('scroll', () => {
+    if (window.scrollY > 50) {
+        navbar.classList.remove('bg-transparent', 'text-white', 'py-6');
+        navbar.classList.add('bg-white', 'text-charcoal', 'shadow-md', 'py-3');
+    } else {
+        navbar.classList.add('bg-transparent', 'text-white', 'py-6');
+        navbar.classList.remove('bg-white', 'text-charcoal', 'shadow-md', 'py-3');
+    }
+});
