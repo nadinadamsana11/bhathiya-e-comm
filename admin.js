@@ -1,6 +1,7 @@
 // Import Firebase SDKs
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
 import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
+import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
 
 // --- CONFIGURATION START ---
 const firebaseConfig = {
@@ -20,12 +21,64 @@ const CLOUDINARY_UPLOAD_PRESET = "bhathiya_preset";
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
+const auth = getAuth(app);
 const productsCol = collection(db, "products");
 
 // DOM Elements
 const productForm = document.getElementById('productForm');
 const submitBtn = document.getElementById('submitBtn');
 const tableBody = document.getElementById('productTableBody');
+
+// Auth DOM Elements
+const loginOverlay = document.getElementById('loginOverlay');
+const loginForm = document.getElementById('loginForm');
+const loginError = document.getElementById('loginError');
+const dashboardContent = document.getElementById('dashboardContent');
+const logoutBtn = document.getElementById('logoutBtn');
+
+// --- AUTHENTICATION LOGIC ---
+
+onAuthStateChanged(auth, (user) => {
+    if (user) {
+        // User is signed in
+        loginOverlay.classList.add('hidden');
+        dashboardContent.classList.remove('hidden');
+        loadProducts(); // Load products only when logged in
+    } else {
+        // User is signed out
+        loginOverlay.classList.remove('hidden');
+        dashboardContent.classList.add('hidden');
+    }
+});
+
+loginForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const email = document.getElementById('email').value;
+    const password = document.getElementById('password').value;
+    loginError.classList.add('hidden');
+
+    try {
+        await signInWithEmailAndPassword(auth, email, password);
+        // onAuthStateChanged will handle showing the dashboard
+    } catch (error) {
+        console.error("Login failed:", error.message);
+        loginError.innerText = "Invalid credentials. Please try again.";
+        loginError.classList.remove('hidden');
+    }
+});
+
+logoutBtn.addEventListener('click', async () => {
+    try {
+        await signOut(auth);
+        // onAuthStateChanged will handle showing the login screen
+    } catch (error) {
+        console.error("Sign out failed:", error);
+        alert("Failed to log out.");
+    }
+});
+
+
+// --- PRODUCT MANAGEMENT LOGIC ---
 
 // 1. Handle Form Submit
 productForm.addEventListener('submit', async (e) => {
@@ -120,5 +173,4 @@ window.deleteProduct = async (id) => {
     }
 };
 
-// Initial Load
-loadProducts();
+// Initial Load is now handled by onAuthStateChanged
