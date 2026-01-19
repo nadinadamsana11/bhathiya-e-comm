@@ -13,6 +13,7 @@ const firebaseConfig = {
   measurementId: "G-4423Z2CVTJ"
 };
 
+
 // Replace with the shop owner's phone number (International format without +)
 // Example: 94771234567
 const WHATSAPP_PHONE = "94771234567"; 
@@ -36,6 +37,14 @@ const modal = document.getElementById('productModal');
 // Cart Elements
 const cartSidebar = document.getElementById('cartSidebar');
 const cartOverlay = document.getElementById('cartOverlay');
+
+// Event Delegation for Add to Cart
+grid.addEventListener('click', (e) => {
+    const btn = e.target.closest('.add-to-cart-btn');
+    if (btn) {
+        addToCart(btn.dataset.id);
+    }
+});
 
 // 1. Fetch Products
 async function fetchProducts() {
@@ -78,7 +87,7 @@ function renderProducts(products) {
             <div class="p-5 flex flex-col flex-1">
                 <h3 class="text-gray-900 font-semibold text-lg mb-1 truncate">${product.name}</h3>
                 <p class="text-indigo-600 font-bold text-xl mb-4">LKR ${product.price}</p>
-                <button onclick="addToCart('${product.id}')" class="mt-auto w-full bg-gray-900 text-white py-2.5 rounded-lg text-sm font-medium hover:bg-gray-800 transition active:scale-95">
+                <button data-id="${product.id}" class="add-to-cart-btn mt-auto w-full bg-gray-900 text-white py-2.5 rounded-lg text-sm font-medium hover:bg-gray-800 transition active:scale-95">
                     Add to Cart
                 </button>
             </div>
@@ -193,16 +202,16 @@ window.toggleCart = (forceOpen = null) => {
 window.checkout = () => {
     if (cart.length === 0) return alert("Your cart is empty!");
 
-    let message = "Hi, I'd like to place an order:\n\n";
+    let message = "Order Summary:\n";
     let total = 0;
 
-    cart.forEach((item, index) => {
+    cart.forEach((item) => {
         const itemTotal = item.price * item.qty;
         total += itemTotal;
-        message += `${index + 1}. ${item.name} (x${item.qty}) - LKR ${itemTotal}\n`;
+        message += `- ${item.name} (x${item.qty}): LKR ${itemTotal}\n`;
     });
 
-    message += `\n*Total Amount: LKR ${total}*`;
+    message += `\n- Total: LKR ${total}`;
     
     const url = `https://wa.me/${WHATSAPP_PHONE}?text=${encodeURIComponent(message)}`;
     window.open(url, '_blank');
