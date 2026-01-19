@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Luxe Scents | Premium Perfumes</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Lato:wght@300;400;700&display=swap');
+        
+        body { font-family: 'Lato', sans-serif; }
+        h1, h2, h3 { font-family: 'Playfair Display', serif; }
+        
+        .text-gold { color: #D4AF37; }
+        .bg-gold { background-color: #D4AF37; }
+        .border-gold { border-color: #D4AF37; }
+        .btn-gold { background-color: #D4AF37; color: white; transition: 0.3s; }
+        .btn-gold:hover { background-color: #b5952f; }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800">
+
+    <!-- Navbar -->
+    <nav class="bg-white shadow-sm sticky top-0 z-40">
+        <div class="container mx-auto px-4 py-4 flex justify-between items-center">
+            <div class="text-2xl font-bold tracking-widest uppercase">Luxe Scents</div>
+            <a href="https://wa.me/YOUR_PHONE_NUMBER" class="text-sm text-gray-500 hover:text-gold">Contact Us</a>
+        </div>
+    </nav>
+
+    <!-- Hero -->
+    <header class="bg-gray-900 text-white py-20 text-center px-4">
+        <h1 class="text-4xl md:text-6xl mb-4 text-gold">Essence of Elegance</h1>
+        <p class="text-gray-400 max-w-xl mx-auto font-light">Discover our curated collection of premium fragrances designed to leave a lasting impression.</p>
+    </header>
+
+    <!-- Filters -->
+    <section class="container mx-auto px-4 py-8">
+        <div class="flex flex-col md:flex-row gap-4 justify-center items-center mb-8">
+            <input type="text" id="searchInput" placeholder="Search perfumes..." 
+                class="w-full md:w-1/3 p-3 border border-gray-300 rounded focus:outline-none focus:border-gold">
+            
+            <select id="categoryFilter" class="w-full md:w-1/4 p-3 border border-gray-300 rounded focus:outline-none focus:border-gold bg-white">
+                <option value="All">All Categories</option>
+                <option value="Men">Men</option>
+                <option value="Women">Women</option>
+                <option value="Unisex">Unisex</option>
+            </select>
+        </div>
+
+        <!-- Product Grid -->
+        <div id="productGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+            <!-- JS will populate this -->
+            <div class="col-span-full text-center text-gray-400 py-10">Loading Collection...</div>
+        </div>
+    </section>
+
+    <!-- Product Modal -->
+    <div id="productModal" class="fixed inset-0 bg-black bg-opacity-70 hidden z-50 flex justify-center items-center p-4">
+        <div class="bg-white rounded-lg max-w-3xl w-full overflow-hidden shadow-2xl relative flex flex-col md:flex-row">
+            <button onclick="closeModal()" class="absolute top-2 right-4 text-3xl text-gray-500 hover:text-black">&times;</button>
+            
+            <div class="md:w-1/2 h-64 md:h-auto bg-gray-100">
+                <img id="modalImg" src="" class="w-full h-full object-cover">
+            </div>
+            
+            <div class="md:w-1/2 p-8 flex flex-col justify-center">
+                <span id="modalCategory" class="text-xs font-bold text-gold uppercase tracking-widest mb-2"></span>
+                <h2 id="modalName" class="text-3xl mb-2"></h2>
+                <p id="modalPrice" class="text-xl text-gray-600 mb-4"></p>
+                <p id="modalDesc" class="text-gray-500 mb-6 leading-relaxed text-sm"></p>
+                
+                <a id="modalWhatsapp" href="#" target="_blank" 
+                   class="btn-gold text-center py-3 rounded font-bold uppercase tracking-wider shadow-md">
+                   Buy on WhatsApp
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <footer class="bg-gray-900 text-gray-500 text-center py-8 mt-12 text-sm">
+        &copy; 2023 Luxe Scents. All rights reserved.
+    </footer>
+
+    <script type="module" src="script.js"></script>
+</body>
+</html>
