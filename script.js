@@ -14,6 +14,7 @@ const firebaseConfig = {
 };
 
 
+
 // Replace with the shop owner's phone number (International format without +)
 // Example: 94771234567
 const WHATSAPP_PHONE = "94742751312"; 
