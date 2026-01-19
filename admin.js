@@ -48,6 +48,7 @@ onAuthStateChanged(auth, (user) => {
         // User is signed out
         loginOverlay.classList.remove('hidden');
         dashboardContent.classList.add('hidden');
+        tableBody.innerHTML = '';
     }
 });
 
@@ -83,6 +84,8 @@ logoutBtn.addEventListener('click', async () => {
 // 1. Handle Form Submit
 productForm.addEventListener('submit', async (e) => {
     e.preventDefault();
+    
+    if (!auth.currentUser) return alert("You must be logged in to add products.");
     
     const file = document.getElementById('imageFile').files[0];
     if (!file) return alert("Please select an image");
@@ -143,6 +146,8 @@ productForm.addEventListener('submit', async (e) => {
 
 // 2. Load Products for Table
 async function loadProducts() {
+    if (!auth.currentUser) return;
+
     tableBody.innerHTML = '<tr><td colspan="4" class="p-4 text-center">Loading...</td></tr>';
     try {
         const snapshot = await getDocs(productsCol);
@@ -181,6 +186,8 @@ async function loadProducts() {
 
 // 3. Delete Product
 window.deleteProduct = async (id) => {
+    if (!auth.currentUser) return alert("You must be logged in to delete products.");
+
     if(confirm("Are you sure you want to delete this product?")) {
         try {
             await deleteDoc(doc(db, "perfumes", id));
