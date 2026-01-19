@@ -13,8 +13,8 @@ import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc } from "https
     measurementId: "G-7XBCYHGQK6"
   };
 
-const CLOUDINARY_URL = "https://api.cloudinary.com/v1_1/YOUR_CLOUD_NAME/image/upload";
-const CLOUDINARY_UPLOAD_PRESET = "YOUR_UNSIGNED_UPLOAD_PRESET";
+const CLOUDINARY_URL = "https://api.cloudinary.com/v1_1/bhathiya-e-comm-site/image/upload";
+const CLOUDINARY_UPLOAD_PRESET = "bhathiya-e-comm-site";
 // --- CONFIGURATION END ---
 
 // Initialize Firebase
