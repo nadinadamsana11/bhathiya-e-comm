@@ -1,6 +1,6 @@
 // Import Firebase SDKs
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
-import { getFirestore, collection, addDoc, getDocs, deleteDoc, updateDoc, doc } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
+import { getFirestore, collection, addDoc, getDocs, deleteDoc, updateDoc, doc, query, orderBy, limit, startAfter, endBefore, limitToLast } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
 
 // --- CONFIGURATION START ---
@@ -28,6 +28,9 @@ const productsCol = collection(db, "products");
 let allAdminProducts = [];
 let deleteTargetId = null;
 let editTargetId = null;
+let currentPage = 1;
+let lastVisible = null;
+let firstVisible = null;
 
 // DOM Elements
 const productForm = document.getElementById('productForm');
@@ -173,6 +176,7 @@ productForm.addEventListener('submit', async (e) => {
 
         showToast("Product Added Successfully!");
         productForm.reset();
+        closeAddModal(); // Close the new modal
         loadProducts(); // Refresh table
 
     } catch (error) {
@@ -184,48 +188,83 @@ productForm.addEventListener('submit', async (e) => {
     }
 });
 
-// 2. Load Products for Table
-async function loadProducts() {
+// 2. Load Products (Pagination & Cards)
+async function loadProducts(direction = 'first') {
     if (!auth.currentUser) return;
 
-    tableBody.innerHTML = '<tr><td colspan="4" class="p-4 text-center">Loading...</td></tr>';
+    const grid = document.getElementById('inventoryGrid');
+    grid.innerHTML = '<div class="col-span-full text-center py-10"><i class="fas fa-spinner fa-spin text-4xl text-gold"></i></div>';
+
     try {
-        const snapshot = await getDocs(productsCol);
+        let q;
+        const baseRef = collection(db, "products");
+        
+        // Pagination Logic
+        if (direction === 'next' && lastVisible) {
+            q = query(baseRef, orderBy("createdAt", "desc"), startAfter(lastVisible), limit(10));
+            currentPage++;
+        } else if (direction === 'prev' && firstVisible && currentPage > 1) {
+            q = query(baseRef, orderBy("createdAt", "desc"), endBefore(firstVisible), limitToLast(10));
+            currentPage--;
+        } else {
+            q = query(baseRef, orderBy("createdAt", "desc"), limit(10));
+            currentPage = 1;
+        }
+
+        const snapshot = await getDocs(q);
         allAdminProducts = []; // Reset local cache
-        tableBody.innerHTML = '';
+        grid.innerHTML = '';
 
         if (snapshot.empty) {
-            tableBody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-gray-500">No perfumes found.</td></tr>';
+            grid.innerHTML = '<div class="col-span-full text-center text-gray-500">No products found.</div>';
             return;
         }
+
+        // Update Cursors
+        firstVisible = snapshot.docs[0];
+        lastVisible = snapshot.docs[snapshot.docs.length - 1];
+        
+        // Update UI Controls
+        document.getElementById('pageIndicator').innerText = `Page ${currentPage}`;
+        document.getElementById('prevPageBtn').disabled = currentPage === 1;
+        document.getElementById('prevPageBtn').classList.toggle('opacity-50', currentPage === 1);
 
         snapshot.forEach(docSnap => {
             const product = docSnap.data();
             allAdminProducts.push({ id: docSnap.id, ...product }); // Store for edit
-            const row = `
-                <tr class="hover:bg-gray-700">
-                    <td class="px-4 py-3">
-                        <img src="${product.imageUrl}" class="w-12 h-12 object-cover rounded border border-gray-600">
-                    </td>
-                    <td class="px-4 py-3 font-medium text-white">${product.name}</td>
-                    <td class="px-4 py-3 text-gold">${product.price}</td>
-                    <td class="px-4 py-3 flex gap-3">
-                        <button onclick="openEditModal('${docSnap.id}')" class="text-blue-400 hover:text-blue-200 text-sm underline">Edit</button>
-                        <button onclick="openDeleteModal('${docSnap.id}')" class="text-red-400 hover:text-red-200 text-sm underline">Delete</button>
-                    </td>
-                </tr>
+            
+            // Create Card
+            const card = document.createElement('div');
+            card.className = "bg-gray-800 rounded-xl shadow-lg border border-gray-700 overflow-hidden hover:border-gold transition-all cursor-pointer group relative";
+            card.onclick = () => openViewModal(docSnap.id);
+
+            card.innerHTML = `
+                <div class="relative h-48 overflow-hidden">
+                    <img src="${product.imageUrl}" class="w-full h-full object-cover group-hover:scale-110 transition duration-500">
+                    <div class="absolute top-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded font-bold">${product.category}</div>
+                </div>
+                <div class="p-4">
+                    <h3 class="font-bold text-white text-lg truncate mb-1">${product.name}</h3>
+                    <div class="flex justify-between items-center">
+                        <p class="text-gold font-medium">LKR ${product.price}</p>
+                        <span class="text-gray-500 text-xs"><i class="fas fa-eye"></i> View</span>
+                    </div>
+                </div>
             `;
-            tableBody.innerHTML += row;
+            grid.appendChild(card);
         });
     } catch (error) {
         console.error("Error loading products:", error);
         if (error.code === 'permission-denied') {
-            tableBody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-red-500">Permission Denied: You must be logged in.</td></tr>';
+            grid.innerHTML = '<div class="col-span-full text-center text-red-500">Permission Denied: You must be logged in.</div>';
         } else {
-            tableBody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-red-500">Error: ${error.message}</td></tr>`;
+            grid.innerHTML = `<div class="col-span-full text-center text-red-500">Error: ${error.message}</div>`;
         }
     }
 }
+
+// Expose pagination to window
+window.changePage = (direction) => loadProducts(direction);
 
 // 3. Delete Logic
 window.openDeleteModal = (id) => {
@@ -247,6 +286,7 @@ window.confirmDeleteAction = async () => {
         showToast("Product deleted successfully.");
         loadProducts();
         closeDeleteModal();
+        closeViewModal(); // Also close view modal if open
     } catch (error) {
         console.error("Error deleting product:", error);
         showToast("Failed to delete: " + error.message, "error");
@@ -264,6 +304,7 @@ window.openEditModal = (id) => {
     document.getElementById('editCategory').value = product.category;
     document.getElementById('editDescription').value = product.description;
     document.getElementById('editModal').classList.remove('hidden');
+    // We can keep View Modal open behind it, or close it. Let's keep it for context or close it.
 };
 
 window.closeEditModal = () => {
@@ -312,6 +353,7 @@ editForm.addEventListener('submit', async (e) => {
         showToast("Product updated successfully!");
         loadProducts();
         closeEditModal();
+        closeViewModal(); // Close view modal to force refresh next time
 
     } catch (error) {
         console.error("Update failed:", error);
@@ -321,5 +363,35 @@ editForm.addEventListener('submit', async (e) => {
         submitBtn.disabled = false;
     }
 });
+
+// 5. View Modal Logic
+window.openViewModal = (id) => {
+    const product = allAdminProducts.find(p => p.id === id);
+    if (!product) return;
+
+    document.getElementById('viewImage').src = product.imageUrl;
+    document.getElementById('viewCategory').innerText = product.category;
+    document.getElementById('viewName').innerText = product.name;
+    document.getElementById('viewPrice').innerText = `LKR ${product.price}`;
+    document.getElementById('viewDescription').innerText = product.description;
+    
+    // Format Date
+    const date = product.createdAt?.toDate ? product.createdAt.toDate().toLocaleDateString() : 'N/A';
+    document.getElementById('viewDate').innerText = date;
+
+    // Setup Buttons
+    document.getElementById('viewEditBtn').onclick = () => openEditModal(id);
+    document.getElementById('viewDeleteBtn').onclick = () => openDeleteModal(id);
+
+    document.getElementById('viewModal').classList.remove('hidden');
+};
+
+window.closeViewModal = () => {
+    document.getElementById('viewModal').classList.add('hidden');
+};
+
+// 6. Add Modal Logic
+window.openAddModal = () => document.getElementById('addProductModal').classList.remove('hidden');
+window.closeAddModal = () => document.getElementById('addProductModal').classList.add('hidden');
 
 // Initial Load is now handled by onAuthStateChanged
