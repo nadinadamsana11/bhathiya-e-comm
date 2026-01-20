@@ -23,7 +23,7 @@ const WHATSAPP_PHONE = "94742751312";
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
-const productsCol = collection(db, "perfumes");
+const productsCol = collection(db, "products");
 
 // State
 let allProducts = [];

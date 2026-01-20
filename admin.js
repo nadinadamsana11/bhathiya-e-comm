@@ -22,7 +22,7 @@ const CLOUDINARY_UPLOAD_PRESET = "bhathiya_preset";
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
-const productsCol = collection(db, "perfumes");
+const productsCol = collection(db, "products");
 
 // DOM Elements
 const productForm = document.getElementById('productForm');
@@ -190,7 +190,7 @@ window.deleteProduct = async (id) => {
 
     if(confirm("Are you sure you want to delete this product?")) {
         try {
-            await deleteDoc(doc(db, "perfumes", id));
+            await deleteDoc(doc(db, "products", id));
             loadProducts();
         } catch (error) {
             console.error("Error deleting product:", error);
