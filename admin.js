@@ -1,6 +1,6 @@
 // Import Firebase SDKs
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
-import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
+import { getFirestore, collection, addDoc, getDocs, deleteDoc, updateDoc, doc } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
 
 // --- CONFIGURATION START ---
@@ -24,6 +24,11 @@ const db = getFirestore(app);
 const auth = getAuth(app);
 const productsCol = collection(db, "products");
 
+// State
+let allAdminProducts = [];
+let deleteTargetId = null;
+let editTargetId = null;
+
 // DOM Elements
 const productForm = document.getElementById('productForm');
 const submitBtn = document.getElementById('submitBtn');
@@ -35,6 +40,41 @@ const loginForm = document.getElementById('loginForm');
 const loginError = document.getElementById('loginError');
 const dashboardContent = document.getElementById('dashboardContent');
 const logoutBtn = document.getElementById('logoutBtn');
+
+// --- TOAST NOTIFICATION SYSTEM ---
+function showToast(message, type = "success") {
+    const toast = document.getElementById('adminToast');
+    const content = document.getElementById('adminToastContent');
+    const title = document.getElementById('adminToastTitle');
+    const msg = document.getElementById('adminToastMessage');
+    const icon = document.getElementById('adminToastIcon');
+
+    toast.classList.remove('hidden');
+    // Trigger reflow
+    void toast.offsetWidth;
+    content.classList.remove('translate-y-10', 'opacity-0');
+
+    msg.innerText = message;
+
+    if (type === "success") {
+        content.classList.remove('border-red-500');
+        content.classList.add('border-gold');
+        title.innerText = "Success";
+        title.className = "font-bold text-sm text-gold";
+        icon.innerHTML = `<svg class="w-6 h-6 text-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>`;
+    } else {
+        content.classList.remove('border-gold');
+        content.classList.add('border-red-500');
+        title.innerText = "Error";
+        title.className = "font-bold text-sm text-red-500";
+        icon.innerHTML = `<svg class="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>`;
+    }
+
+    setTimeout(() => {
+        content.classList.add('translate-y-10', 'opacity-0');
+        setTimeout(() => toast.classList.add('hidden'), 300);
+    }, 3000);
+}
 
 // --- AUTHENTICATION LOGIC ---
 
@@ -74,7 +114,7 @@ logoutBtn.addEventListener('click', async () => {
         // onAuthStateChanged will handle showing the login screen
     } catch (error) {
         console.error("Sign out failed:", error);
-        alert("Failed to log out.");
+        showToast("Failed to log out.", "error");
     }
 });
 
@@ -85,10 +125,10 @@ logoutBtn.addEventListener('click', async () => {
 productForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     
-    if (!auth.currentUser) return alert("You must be logged in to add products.");
+    if (!auth.currentUser) return showToast("You must be logged in to add products.", "error");
     
     const file = document.getElementById('imageFile').files[0];
-    if (!file) return alert("Please select an image");
+    if (!file) return showToast("Please select an image", "error");
 
     // UI Loading State
     const originalBtnText = submitBtn.innerText;
@@ -131,13 +171,13 @@ productForm.addEventListener('submit', async (e) => {
             createdAt: new Date()
         });
 
-        alert("Product Added Successfully!");
+        showToast("Product Added Successfully!");
         productForm.reset();
         loadProducts(); // Refresh table
 
     } catch (error) {
         console.error(error);
-        alert("Error: " + error.message);
+        showToast("Error: " + error.message, "error");
     } finally {
         submitBtn.innerText = originalBtnText;
         submitBtn.disabled = false;
@@ -151,6 +191,7 @@ async function loadProducts() {
     tableBody.innerHTML = '<tr><td colspan="4" class="p-4 text-center">Loading...</td></tr>';
     try {
         const snapshot = await getDocs(productsCol);
+        allAdminProducts = []; // Reset local cache
         tableBody.innerHTML = '';
 
         if (snapshot.empty) {
@@ -160,6 +201,7 @@ async function loadProducts() {
 
         snapshot.forEach(docSnap => {
             const product = docSnap.data();
+            allAdminProducts.push({ id: docSnap.id, ...product }); // Store for edit
             const row = `
                 <tr class="hover:bg-gray-700">
                     <td class="px-4 py-3">
@@ -167,8 +209,9 @@ async function loadProducts() {
                     </td>
                     <td class="px-4 py-3 font-medium text-white">${product.name}</td>
                     <td class="px-4 py-3 text-gold">${product.price}</td>
-                    <td class="px-4 py-3">
-                        <button onclick="deleteProduct('${docSnap.id}')" class="text-red-400 hover:text-red-200 text-sm underline">Delete</button>
+                    <td class="px-4 py-3 flex gap-3">
+                        <button onclick="openEditModal('${docSnap.id}')" class="text-blue-400 hover:text-blue-200 text-sm underline">Edit</button>
+                        <button onclick="openDeleteModal('${docSnap.id}')" class="text-red-400 hover:text-red-200 text-sm underline">Delete</button>
                     </td>
                 </tr>
             `;
@@ -184,19 +227,99 @@ async function loadProducts() {
     }
 }
 
-// 3. Delete Product
-window.deleteProduct = async (id) => {
-    if (!auth.currentUser) return alert("You must be logged in to delete products.");
+// 3. Delete Logic
+window.openDeleteModal = (id) => {
+    deleteTargetId = id;
+    document.getElementById('deleteModal').classList.remove('hidden');
+};
 
-    if(confirm("Are you sure you want to delete this product?")) {
-        try {
-            await deleteDoc(doc(db, "products", id));
-            loadProducts();
-        } catch (error) {
-            console.error("Error deleting product:", error);
-            alert("Failed to delete: " + error.message);
-        }
+window.closeDeleteModal = () => {
+    deleteTargetId = null;
+    document.getElementById('deleteModal').classList.add('hidden');
+};
+
+window.confirmDeleteAction = async () => {
+    if (!auth.currentUser) return showToast("You must be logged in.", "error");
+    if (!deleteTargetId) return;
+
+    try {
+        await deleteDoc(doc(db, "products", deleteTargetId));
+        showToast("Product deleted successfully.");
+        loadProducts();
+        closeDeleteModal();
+    } catch (error) {
+        console.error("Error deleting product:", error);
+        showToast("Failed to delete: " + error.message, "error");
     }
 };
+
+// 4. Edit Logic
+window.openEditModal = (id) => {
+    const product = allAdminProducts.find(p => p.id === id);
+    if (!product) return;
+
+    editTargetId = id;
+    document.getElementById('editName').value = product.name;
+    document.getElementById('editPrice').value = product.price;
+    document.getElementById('editCategory').value = product.category;
+    document.getElementById('editDescription').value = product.description;
+    document.getElementById('editModal').classList.remove('hidden');
+};
+
+window.closeEditModal = () => {
+    editTargetId = null;
+    document.getElementById('editModal').classList.add('hidden');
+    document.getElementById('editForm').reset();
+};
+
+const editForm = document.getElementById('editForm');
+editForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (!auth.currentUser) return showToast("You must be logged in.", "error");
+    if (!editTargetId) return;
+
+    const submitBtn = document.getElementById('editSubmitBtn');
+    const originalText = submitBtn.innerText;
+    submitBtn.innerText = "Updating...";
+    submitBtn.disabled = true;
+
+    try {
+        const updateData = {
+            name: document.getElementById('editName').value,
+            price: Number(document.getElementById('editPrice').value),
+            category: document.getElementById('editCategory').value,
+            description: document.getElementById('editDescription').value,
+        };
+
+        // Handle Image Update if new file selected
+        const file = document.getElementById('editImageFile').files[0];
+        if (file) {
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+
+            const res = await fetch(CLOUDINARY_URL, { method: 'POST', body: formData });
+            if (!res.ok) throw new Error("Image upload failed");
+            
+            const data = await res.json();
+            if (data.secure_url) {
+                updateData.imageUrl = data.secure_url;
+            }
+        }
+
+        await updateDoc(doc(db, "products", editTargetId), updateData);
+        
+        showToast("Product updated successfully!");
+        loadProducts();
+        closeEditModal();
+
+    } catch (error) {
+        console.error("Update failed:", error);
+        showToast("Update failed: " + error.message, "error");
+    } finally {
+        submitBtn.innerText = originalText;
+        submitBtn.disabled = false;
+    }
+});
 
 // Initial Load is now handled by onAuthStateChanged
